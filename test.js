@@ -27,9 +27,9 @@ function returnMeanEvaluation(value) {
   return value;
 };
 
-function returnNextPageResults(room, cb) {
-  if (!room) cb(null);
-  return new Promise(resolve => {
+function returnNextPageResults(room) {
+  if (!room) return;
+  return new Promise((resolve, reject) => {
     let students = room.students;
     //each of the student rooms have a next
     requestPage((room || {}).next, nextSet => {
@@ -41,8 +41,8 @@ function returnNextPageResults(room, cb) {
       console.log(`Evaluating Room ${room.room}`);
       resolve(filter(n => n.age > 25, unnest(students)).length);
     }, (error) => {
-      cb(error);
-    })
+      reject(error);
+    });
   });
 };
 
