@@ -17,14 +17,14 @@ async function getAllClasses() {
   }));
 };
 
-function getMeanStudents(rooms) {
-  const result = Promise.all(rooms.map(room => returnNextPageResults(room))).then(res => mean(res));
+function getStudents(rooms) {
+  const result = Promise.all(rooms.map(room => returnNextPageResults(room))).then(res => res);
   return result;
 };
 
 function returnMeanEvaluation(value) {
-  console.log(`The mean value of all students is ${value}`);
-  return value;
+  console.log(`The mean value of all students is ${mean(value)}`);
+  return mean(value);
 };
 
 function returnNextPageResults(room) {
