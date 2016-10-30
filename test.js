@@ -1,65 +1,69 @@
-import axios from "axios";
-import { reduce, unnest, filter, mean, composeP, compose } from "ramda";
+var axios = require("axios");
+var R = require("ramda");
 /*
-* Broadly Interview
-* Challenge => http://challenge.broadly.com/
-*
-*/
+ * Broadly Interview
+ * Challenge => http://challenge.broadly.com/
+ *
+ */
 
-//get all classes
-async function getAllClasses() {
+function classCountStore(students) {
+  var inc = 0;
+  return students.reduce(function(prev, curr) {
+    if(curr.age >= 25) {
+      inc += 1 
+    };
+    return inc;
+  }, 0);
+};
+
+function getAllClasses() {
   console.log("Making Request to classes....");
+  var allClasses = axios.get("http://challenge.broadly.com/classes");
+  return allClasses;
+};
 
-  const allClasses = await axios.get("http://challenge.broadly.com/classes");
-  return Promise.all(allClasses.data.classes.map(async eachClass => {
-    const room = await axios.get(eachClass);
-    return room.data;
+function getRooms(allClasses) {
+  return Promise.all(allClasses.data.classes.map(function(eachClass) {
+    var room = axios.get(eachClass).then(function(res) {
+      return res.data
+    });
+    return room;
   }));
 };
 
-function getStudents(rooms) {
-  const result = Promise.all(rooms.map(room => returnNextPageResults(room))).then(res => res);
-  return result;
-};
-
-function returnMeanEvaluation(value) {
-  console.log(`The mean value of all students is ${mean(value)}`);
-  return mean(value);
+function getAllStudentsInEachRoom(rooms) {
+  return Promise.all(rooms.map(function(room) {
+    return returnNextPageResults(room).then(function(res) {
+      return res;
+    });
+  }));
 };
 
 function returnNextPageResults(room) {
+  var classCount = [];
   if (!room) return;
-  return new Promise((resolve, reject) => {
-    let students = room.students;
-    //each of the student rooms have a next
-    requestPage((room || {}).next, nextSet => {
-      if (room.room === nextSet.room) {
-        students.push(nextSet.students);
-      }
-    }, () => {
-      //question says ignore those less than 25 years
-      console.log(`Evaluating Room ${room.room}`);
-      resolve(filter(n => n.age > 25, unnest(students)).length);
-    }, (error) => {
-      reject(error);
-    });
+  return new Promise(function(resolve) {
+    console.log("Evaluating Room "+ room.room);
+    var students = room.students;
+    var studentsAbove25 = classCountStore(students);
+    if (room.next) {
+      axios.get(room.next).then(function(res) {
+        students = res.data.students;
+        studentsAbove25 += classCountStore(students);
+        classCount.push(studentsAbove25);
+        resolve(classCount);
+      });
+    };
   });
 };
 
-function requestPage(url, receive, complete, reject) {
-  if (!url) return complete();
-  axios.get(url)
-    .then(res => {
-      const response = res.data;
-      receive(response);
-      requestPage((response || {}).next, receive, complete, reject);
-    }).catch(error => {
-      console.error("Failed to retrieve next page", error);
-      return reject(error);
-    });
+function getMeanEvaluation(accumulatedRoomCount) {
+  var result = R.mean(R.unnest(accumulatedRoomCount));
+  console.log("The mean value of all students is " + result);
+  return result;
 };
 
-composeP(returnMeanEvaluation, getMeanStudents, getAllClasses)();
+R.composeP(getMeanEvaluation, getAllStudentsInEachRoom, getRooms, getAllClasses)();
 
 //ignore students that are less than 25 years
 //get the results
