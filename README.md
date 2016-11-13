@@ -1,4 +1,4 @@
-##Broadly
+##Sort classess and return their mean evaluation
 
 [Challenge](http://challenge.broadly.com/)
 
