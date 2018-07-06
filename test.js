@@ -1,7 +1,7 @@
 var axios = require("axios");
 var R = require("ramda");
 /*
- * Broadly Interview
+ * 
  * Challenge => http://challenge.broadly.com/
  *
  */
